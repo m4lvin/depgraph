@@ -9,20 +9,11 @@
 #-}
 
 module ParseUtilities ( ProgramInfo (current, deps, fields, currentFile), emptyPI, insertDep, insertSF, insertSF2, lookupSF, insertField, ProgramParser, ioFile, ioFiles, fieldsParser, readFields, chain, chainPI, getFile) where
-import System.Environment   
-import System.Directory  
 import System.IO  
-import Control.Monad
-import Data.Graph.Inductive
-import qualified Data.List.Ordered
-import Data.Tree
-import qualified Data.List
 import qualified Data.Map.Strict as Map
 import Text.ParserCombinators.Parsec
-import Data.Char
 import System.IO.Unsafe
 import qualified Data.MultiMap as MM
-import Data.Maybe
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (emptyDef)
 

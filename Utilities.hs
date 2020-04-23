@@ -9,14 +9,8 @@
 #-}
 
 module Utilities  where
-import System.Environment
-import Control.Monad
-import Data.Tree
-import qualified Data.List
 import qualified Data.Map.Strict as Map
-import qualified Data.Hashable
 import Data.Maybe
-import Debug.Trace
 
 --combinators
 (-:):: a -> (a -> b) -> b
