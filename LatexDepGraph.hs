@@ -66,9 +66,9 @@ argToLatex :: TeXArg -> LaTeX
 argToLatex ta = 
     case ta of 
       FixArg latex -> latex
-      OptArg latex -> latex	
-      MOptArg latexs -> texSeqs latexs	
-      SymArg latex -> latex	
+      OptArg latex -> latex
+      MOptArg latexs -> texSeqs latexs
+      SymArg latex -> latex
       MSymArg latexs -> texSeqs latexs
 
 argsToLatex :: [TeXArg] -> LaTeX
@@ -88,10 +88,10 @@ findLabel labs latex =
           if str `elem` labs 
              then showLatex $ argsToLatex args
              else findLabel labs (argsToLatex args)
-      TeXCommS str -> ""	
-      TeXEnv str args latex2 -> ""	
+      TeXCommS str -> ""
+      TeXEnv str args latex2 -> ""
       TeXMath mt latex2 -> ""
-      TeXLineBreak mmeas bool -> ""	
+      TeXLineBreak mmeas bool -> ""
       TeXBraces latex2 -> findLabel labs latex2
       TeXComment comment -> ""
       TeXSeq latex1 latex2 -> 
@@ -115,10 +115,10 @@ findRefs refs latex =
           if str `elem` refs
              then [showLatex $ argsToLatex args]
              else findRefs refs (argsToLatex args)
-      TeXCommS str -> []	
-      TeXEnv str args latex2 -> findRefs refs latex2	
+      TeXCommS str -> []
+      TeXEnv str args latex2 -> findRefs refs latex2
       TeXMath mt latex2 -> findRefs refs latex2
-      TeXLineBreak mmeas bool -> []	
+      TeXLineBreak mmeas bool -> []
       TeXBraces latex2 -> findRefs refs latex2
       TeXComment comment -> []
       TeXSeq latex1 latex2 -> (findRefs refs latex1) ++ (findRefs refs latex2)
@@ -133,7 +133,7 @@ latexToPI' mm latex pi =
       TeXRaw txt -> pi 
                     --skip over raw TeX
       TeXComm str args -> latexToPI' mm (argsToLatex args) pi
-      TeXCommS str -> pi	
+      TeXCommS str -> pi
       TeXEnv str args latex2 -> ifelselist
                                 [(str `elem` (MM.lookup "Theorems" mm), let {
            lab = findLabel (MM.lookup "Labels" mm) latex2;
@@ -152,10 +152,10 @@ latexToPI' mm latex pi =
                                                                                     current pi}|> foldIterate insertDep (findRefs (MM.lookup "Refs" mm) latex2))]
                (latexToPI' mm latex2 pi)
       TeXMath mt latex2 -> pi
-      TeXLineBreak mmeas bool -> pi	
-      TeXBraces latex2 -> latexToPI' mm latex2 pi	
+      TeXLineBreak mmeas bool -> pi
+      TeXBraces latex2 -> latexToPI' mm latex2 pi
       TeXComment comment -> pi
-      TeXSeq latex1 latex2 -> latexToPI' mm latex2 (latexToPI' mm latex1 pi)	
+      TeXSeq latex1 latex2 -> latexToPI' mm latex2 (latexToPI' mm latex1 pi)
       TeXEmpty -> pi
 
 latexToPI :: MM.MultiMap String String -> LaTeX -> ProgramInfo
@@ -167,13 +167,13 @@ latexToPI latex pi =
     case latex of
       TeXRaw txt -> pi
       TeXComm str args -> pi
-      TeXCommS str -> pi	
-      TeXEnv str args latex2 -> pi	
+      TeXCommS str -> pi
+      TeXEnv str args latex2 -> pi
       TeXMath mt latex2 -> pi
-      TeXLineBreak mmeas bool -> pi	
-      TeXBraces latex2 -> pi	
+      TeXLineBreak mmeas bool -> pi
+      TeXBraces latex2 -> pi
       TeXComment comment -> pi
-      TeXSeq latex1 latex2 -> pi	
+      TeXSeq latex1 latex2 -> pi
       TeXEmpty -> pi
 -}
 
@@ -233,25 +233,29 @@ getDepGraph pi =
 latexToDepGraph:: String -> String -> IO ()
 latexToDepGraph inputF outputF = 
  do
-  handle <- openFile inputF ReadMode
-  contents <- hGetContents handle
-  let fields = readFields contents
-  let inputFs = MM.lookup "Files" fields
-  --removeJustWithDefult (M.lookup "Files" fields) []
-  let auxF = (MM.lookup "Aux" fields) !! 0
-  auxHandle <- openFile auxF ReadMode
-  auxContents <- hGetContents auxHandle
-  pi <- chainPI2 inputFs (latexToPI' fields)
-  case (parse (latexAuxParser pi) "error" auxContents) of 
-    Left error -> putStrLn (show error)
-    Right pi2 ->
-      do
-        --putStrLn $ show pi2
-        let graph = getDepGraph pi2
-        let dot = defaultDotC2 (\_ l -> showThm l pi2) (\_ l -> lookupSF l "file" pi) graph
-        writeFile outputF (dot)
---should have safety?
-
+   handle <- openFile inputF ReadMode
+   hSetNewlineMode handle universalNewlineMode
+   contents <- hGetContents handle
+   -- putStrLn (show contents)
+   let fields = readFields contents
+   putStrLn (show fields)
+   let inputFs = MM.lookup "Files" fields
+   --removeJustWithDefult (M.lookup "Files" fields) []
+   let auxF = (MM.lookup "Aux" fields) !! 0
+   putStrLn (show auxF)
+   auxHandle <- openFile auxF ReadMode
+   auxContents <- hGetContents auxHandle
+   pi <- chainPI2 inputFs (latexToPI' fields)
+   case (parse (latexAuxParser pi) "error" auxContents) of 
+     Left error -> putStrLn (show error)
+     Right pi2 ->
+       do
+         putStrLn $ show pi2
+         let graph = getDepGraph pi2
+         let dot = defaultDotC2 (\_ l -> showThm l pi2) (\_ l -> lookupSF l "file" pi) graph
+         writeFile outputF (dot)
+  --should have safety?
+  
 main:: IO ()
 main = do
   args <- getArgs

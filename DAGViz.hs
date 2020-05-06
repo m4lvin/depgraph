@@ -92,8 +92,8 @@ makeClusterParams2 f g = defaultParams {
   where
     idc xc = True
     cb (xn,xl) = case g xn xl of
-	Just xc -> C xc (N (xn,xl))
-	Nothing -> N (xn,xl)
+                   Just xc -> C xc (N (xn,xl))
+                   Nothing -> N (xn,xl)
     fn (xn,xl) = [(Label . StrLabel. pack) (f xn xl)]
     fe (xm,xn,l) = [(Label . StrLabel. pack) ""]  -- no display. (For display use (show l))
 
