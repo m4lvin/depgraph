@@ -1,0 +1,45 @@
+name: depgraph
+version: 0.0.1
+synopsis: Draw dependency graphs for math theorems
+
+ghc-options: -Wall
+
+extra-source-files:
+  - README.md
+  - stack.yaml
+  - package.yaml
+
+library:
+  source-dirs:
+    - lib
+  dependencies:
+    - base >= 4.8 && < 5
+    - containers
+    - data-ordlist
+    - directory
+    - fgl
+    - graphviz
+    - HaTeX
+    - multimap
+    - parsec
+    - text
+
+executables:
+  depgraph:
+    source-dirs: app
+    main: LatexDepGraph.hs
+    dependencies:
+      - base >= 4.8 && < 5
+      - containers
+      - depgraph
+      - directory
+      - fgl
+      - HaTeX
+      - multimap
+      - parsec
+
+tests:
+  tests:
+    main: test/Test.hs
+    dependencies:
+      - base >= 4.8 && < 5
