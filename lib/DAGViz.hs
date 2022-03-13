@@ -1,5 +1,5 @@
 {-# OPTIONS
- 
+
  -XMultiParamTypeClasses
  -XFunctionalDependencies
  -XFlexibleInstances
@@ -46,19 +46,19 @@ defaultDot f g = toDotString (defaultVis f g)
 --same but with clustering
 
 listToCluster :: [c] -> NodeCluster [c] a -> NodeCluster [c] a
-listToCluster path nc = 
-  case path of 
+listToCluster path nc =
+  case path of
     [] -> nc
     x:xs  -> listToCluster xs (C (x:xs) nc) --changed x to x:xs
 
 revListToCluster :: [c] -> NodeCluster [c] a -> NodeCluster [c] a
 revListToCluster path nc = listToCluster (reverse path) nc
-      
+
 {-
 input: a function from nodes & labels to a string,
 a function from a node & label to a cluster label, and label of cluster parent.
 -}
---need to change cluster id. Right now label is Int's, but doesn't contain enough information. 
+--need to change cluster id. Right now label is Int's, but doesn't contain enough information.
 makeClusterParams :: (Show el, Show cl) => (Node -> nl -> String) -> (Node -> [cl]) -> GraphvizParams Node nl el [cl] nl
 makeClusterParams f g = defaultParams {
   isDotCluster = idc,
@@ -102,7 +102,3 @@ defaultVisC2 f g graph = graphToDot (makeClusterParams2 f g) graph
 
 defaultDotC2 :: (Show el) => (Node -> nl  -> String) -> (Node -> nl -> Maybe String) -> Gr nl el -> String
 defaultDotC2 f g graph = toDotString (defaultVisC2 f g graph)
-
-
-
-

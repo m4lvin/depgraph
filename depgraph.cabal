@@ -53,13 +53,3 @@ executable depgraph
     , multimap
     , parsec
   default-language: Haskell2010
-
-test-suite tests
-  type: exitcode-stdio-1.0
-  main-is: test/Test.hs
-  other-modules:
-      Paths_depgraph
-  ghc-options: -Wall
-  build-depends:
-      base >=4.8 && <5
-  default-language: Haskell2010

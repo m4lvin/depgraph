@@ -37,9 +37,3 @@ executables:
       - HaTeX
       - multimap
       - parsec
-
-tests:
-  tests:
-    main: test/Test.hs
-    dependencies:
-      - base >= 4.8 && < 5

@@ -1,5 +1,5 @@
 {-# OPTIONS
- 
+
  -XMultiParamTypeClasses
  -XFunctionalDependencies
  -XFlexibleInstances
@@ -20,28 +20,28 @@ doIf :: Bool -> (a -> a) -> (a -> a)
 doIf p f = (\x -> if p then f x else x)
 
 ifelselist:: [(Bool, a)] -> a -> a
-ifelselist li y = 
-  case li of 
+ifelselist li y =
+  case li of
     [] -> y
     ((b,x):li2) -> if b then x else ifelselist li2 y
 
 iflist :: [(Bool, a)] -> a
-iflist li = 
-  case li of 
+iflist li =
+  case li of
     ((b,x):li2) -> if b then x else iflist li2
 
 loopUntilFail :: (a -> Maybe a) -> a -> a
-loopUntilFail f x = 
-  case (f x) of 
+loopUntilFail f x =
+  case (f x) of
     Just y -> loopUntilFail f y
     Nothing -> x
 
-loopUntil :: (a -> Bool) -> (a -> a) -> a -> a    
-loopUntil p f x = 
+loopUntil :: (a -> Bool) -> (a -> a) -> a -> a
+loopUntil p f x =
   if (p x) then x else loopUntil p f (f x)
 
-stopBefore :: (a -> Bool) -> (a -> a) -> a -> a    
-stopBefore p f x = 
+stopBefore :: (a -> Bool) -> (a -> a) -> a -> a
+stopBefore p f x =
   if (p (f x)) then x else stopBefore p f (f x)
 
 --unsafe operations
@@ -61,10 +61,10 @@ lookup2 x h = removeJust (Map.lookup x h)
 
 lookupWithDefault:: (Ord a) => a -> Map.Map a b -> b -> b
 lookupWithDefault x h y = removeJustWithDefault (Map.lookup x h) y
-  
+
 --Maps and Lists
 
-insertMultiple :: (Ord a) => [(a, b)] -> Map.Map a b -> Map.Map a b 
+insertMultiple :: (Ord a) => [(a, b)] -> Map.Map a b -> Map.Map a b
 insertMultiple li h = foldl (\hm -> (\(x,y) -> Map.insert x y hm)) h li
 
 
@@ -76,7 +76,7 @@ listUpdatesFun p f li = map (\(i,x) -> doIf (p i) f x) (zip [1..] li)
 
 replaceSublist :: Int -> Int -> [a] -> [a] -> [a]
 replaceSublist m n li li2 =
-      let 
+      let
         front = take m li2
         back = drop (max m n) li2
       in
@@ -113,13 +113,13 @@ injf1:: (a->c) -> (a,b) -> (c,b)
 injf1 f (x,y) = (f x, y)
 
 mlookup :: Int -> [a] -> Maybe a
-mlookup n li = if 0<=n && n<(length li) then Just (li!!n) else Nothing 
+mlookup n li = if 0<=n && n<(length li) then Just (li!!n) else Nothing
 
 (*>)::(a->b)->(b->c)->(a->c)
 f *> g = g.f
 
 tryWithDefault::(a->Maybe b) -> b-> a -> b
-tryWithDefault f def x = 
+tryWithDefault f def x =
   case (f x) of
     Nothing -> def
     Just y -> y
