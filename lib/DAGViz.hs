@@ -1,27 +1,10 @@
-{-# OPTIONS
-
- -XMultiParamTypeClasses
- -XFunctionalDependencies
- -XFlexibleInstances
- -XRank2Types
- -XGADTs
- -XPolyKinds
- -XScopedTypeVariables
-#-}
-
 module DAGViz (makeParams, defaultVis, toDotString, defaultDot, makeClusterParams, defaultVisC, defaultDotC, makeClusterParams2, defaultVisC2, defaultDotC2) where
-import Data.Graph.Inductive
-import Data.Text.Lazy (pack, unpack)
 
---graph visualization
+import Data.Graph.Inductive
 import Data.GraphViz
 import Data.GraphViz.Printing (toDot, renderDot)
 import Data.GraphViz.Attributes.Complete
-
-{-
- http://hackage.haskell.org/package/graphviz-2999.17.0.1/docs/Data-GraphViz.html
-
--}
+import Data.Text.Lazy (pack, unpack)
 
 --Node Formula Int
 makeParams :: (Show el) => (Node -> nl -> Gr nl el -> String) -> Gr nl el -> GraphvizParams Node nl el () nl
@@ -52,7 +35,7 @@ listToCluster path nc =
     x:xs  -> listToCluster xs (C (x:xs) nc) --changed x to x:xs
 
 revListToCluster :: [c] -> NodeCluster [c] a -> NodeCluster [c] a
-revListToCluster path nc = listToCluster (reverse path) nc
+revListToCluster path = listToCluster (reverse path)
 
 {-
 input: a function from nodes & labels to a string,
@@ -74,7 +57,7 @@ makeClusterParams f g = defaultParams {
     fe (xm,xn,l) = [(Label . StrLabel. pack) (show l)]
 
 defaultVisC :: (Show el, Ord cl, Show cl) => (Node -> nl  -> String) -> (Node -> [cl]) -> Gr nl el -> DotGraph Node
-defaultVisC f g graph = graphToDot (makeClusterParams f g) graph
+defaultVisC f g = graphToDot (makeClusterParams f g)
 
 defaultDotC :: (Show el, Ord cl, Show cl) => (Node -> nl  -> String) -> (Node -> [cl]) -> Gr nl el -> String
 defaultDotC f g graph = toDotString (defaultVisC f g graph)
@@ -98,7 +81,7 @@ makeClusterParams2 f g = defaultParams {
     fe (xm,xn,l) = [(Label . StrLabel. pack) ""]  -- no display. (For display use (show l))
 
 defaultVisC2 :: (Show el) => (Node -> nl  -> String) -> (Node -> nl -> Maybe String) -> Gr nl el -> DotGraph Node
-defaultVisC2 f g graph = graphToDot (makeClusterParams2 f g) graph
+defaultVisC2 f g = graphToDot (makeClusterParams2 f g)
 
 defaultDotC2 :: (Show el) => (Node -> nl  -> String) -> (Node -> nl -> Maybe String) -> Gr nl el -> String
 defaultDotC2 f g graph = toDotString (defaultVisC2 f g graph)

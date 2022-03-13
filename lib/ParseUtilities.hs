@@ -1,26 +1,17 @@
-{-# OPTIONS
+module ParseUtilities ( ProgramInfo (current, deps, fields, currentFile), emptyPI, insertDep, insertSF, insertSF2, lookupSF, insertField, ProgramParser, ioFile, ioFiles, fieldsParser, readFields, chain, chainPI) where
 
- -XMultiParamTypeClasses
- -XFunctionalDependencies
- -XFlexibleInstances
- -XRank2Types
- -XGADTs
- -XPolyKinds
-#-}
-
-module ParseUtilities ( ProgramInfo (current, deps, fields, currentFile), emptyPI, insertDep, insertSF, insertSF2, lookupSF, insertField, ProgramParser, ioFile, ioFiles, fieldsParser, readFields, chain, chainPI, getFile) where
-import System.IO
 import qualified Data.Map.Strict as Map
-import Text.ParserCombinators.Parsec
-import System.IO.Unsafe
 import qualified Data.MultiMap as MM
+import System.IO
+import System.IO.Unsafe
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (emptyDef)
+import Text.ParserCombinators.Parsec
 
 import Utilities
 
 lexer :: P.TokenParser ()
-lexer  = P.makeTokenParser (emptyDef)
+lexer  = P.makeTokenParser emptyDef
 
 whiteSpace= P.whiteSpace lexer
 lexeme    = P.lexeme lexer
@@ -49,7 +40,7 @@ emptyPI:: ProgramInfo
 emptyPI = ProgramInfo MM.empty Map.empty "" [] ""
 
 insert2:: (Ord a, Eq b) => a -> b -> MM.MultiMap a b -> MM.MultiMap a b
-insert2 x y mm = if y `elem` (MM.lookup x mm) then mm else (MM.insert x y mm)
+insert2 x y mm = if y `elem` MM.lookup x mm then mm else MM.insert x y mm
 
 --insertName:: String -> ProgramInfo -> ProgramInfo
 --insertName str pi = pi{labels = Map.insert (current pi) str}
@@ -77,12 +68,12 @@ insertSF2 lab name y pi =
 
 lookupSF:: String -> String -> ProgramInfo -> Maybe String
 lookupSF propName field pi =
-         case (Map.lookup propName (subfields pi)) of
+         case Map.lookup propName (subfields pi) of
               Nothing -> Nothing
               Just sfs-> Map.lookup field sfs
 
 insertField:: String -> ProgramInfo -> ProgramInfo
-insertField y pi = pi{fields = y:(fields pi)}
+insertField y pi = pi{fields = y:fields pi}
 
 type ProgramParser = ProgramInfo -> Parser ProgramInfo
 
@@ -96,46 +87,36 @@ ioFile inputF outputF f =
 ioFiles:: [String] -> String -> (String -> String) -> IO ()
 ioFiles inputFs outputF f =
   do
-    handles <- sequence (fmap (\x -> openFile x ReadMode) inputFs)
-    contents <- sequence (fmap hGetContents handles)
+    handles <- mapM (`openFile` ReadMode) inputFs
+    contents <- mapM hGetContents handles
     let content = unlines contents
     appendFile outputF (f content)
 
 fieldsParser:: ProgramParser
 fieldsParser pi =
     do {eof; return pi}
-      <|> (try (do {
+      <|> try (do {
         symbol "#";
         expr <- identifier;
         fieldsParser (pi{current = expr})
         --parses eol automatically?
-      }))
+      })
       <|> (do {
         expr <- many1 (noneOf "\n");
         fieldsParser (insertDep expr pi) -- does this preserve the order?
       })
       <|> do{ anyToken; fieldsParser pi}
 
--- -> (String -> Parser ())
 readFields:: String  -> MM.MultiMap String String
 readFields contents = deps $ justRight (parse (fieldsParser emptyPI) "error" contents)
-
 
 chain:: [String] -> a -> (a -> String -> a) -> (a -> Parser a) -> IO a
 chain inputFs init action parser =
   do
-    handles <- sequence (fmap (\x -> openFile x ReadMode) inputFs)
-    contents <- sequence (fmap hGetContents handles)
+    handles <- mapM (`openFile` ReadMode) inputFs
+    contents <- mapM hGetContents handles
     let pi = foldIterate2 (\fileName text pi -> justRight (parse (parser (action pi fileName)) "error" text)) inputFs contents init
     return pi
 
 chainPI:: [String] -> ProgramParser -> IO ProgramInfo
-chainPI inputFs parser = chain inputFs emptyPI (\pi fileName -> pi{currentFile = fileName}) parser
-
---unsafe
---AAAAGGGGHHHH! Bad code! Don't use!
-getFile::String -> String
-getFile name = unsafePerformIO (readFile name)
-
-
---chainPI:: [String] -> (ProgramInfo -> Parser ProgramInfo) -> IO ProgramInfo
+chainPI inputFs = chain inputFs emptyPI (\pi fileName -> pi{currentFile = fileName})
