@@ -1,0 +1,10 @@
+cradle:
+  stack:
+    - path: "./lib"
+      component: "depgraph:lib"
+
+    - path: "./app/LatexDepGraph.hs"
+      component: "depgraph:exe:depgraph"
+
+    - path: "./app/Paths_depgraph.hs"
+      component: "depgraph:exe:depgraph"
