@@ -1,22 +1,9 @@
-{-# OPTIONS
+module Main (main) where
 
- -XMultiParamTypeClasses
- -XFunctionalDependencies
- -XFlexibleInstances
- -XRank2Types
- -XGADTs
- -XPolyKinds
-#-}
-
-module Main where
 import System.Environment
-import System.Directory
 import System.IO
 
-import Control.Monad
-
 import Data.Maybe
-import Data.Monoid
 import Data.Graph.Inductive
 import qualified Data.Map.Strict as M
 import qualified Data.MultiMap as MM
@@ -24,20 +11,14 @@ import qualified Data.MultiMap as MM
 import Text.ParserCombinators.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (emptyDef)
-import Text.Parsec.Error
 
 import Text.LaTeX.Base
-import Text.LaTeX.Base.Render
 import Text.LaTeX.Base.Parser
 import Text.LaTeX.Base.Syntax
-
-import Debug.Trace
 
 import Utilities
 import ParseUtilities
 import DAGViz
-
-debug = flip trace
 
 lexer :: P.TokenParser ()
 lexer  = P.makeTokenParser emptyDef
@@ -45,7 +26,6 @@ lexer  = P.makeTokenParser emptyDef
 whiteSpace= P.whiteSpace lexer
 lexeme    = P.lexeme lexer
 symbol    = P.symbol lexer
-natural   = P.natural lexer
 parens    = P.parens lexer
 semi      = P.semi lexer
 identifier= P.identifier lexer
@@ -65,11 +45,13 @@ showLatex = stripQuotes . show . render
 argToLatex :: TeXArg -> LaTeX
 argToLatex ta =
     case ta of
-      FixArg latex -> latex
-      OptArg latex -> latex
-      MOptArg latexs -> texSeqs latexs
-      SymArg latex -> latex
-      MSymArg latexs -> texSeqs latexs
+      FixArg l -> l
+      OptArg l -> l
+      MOptArg ls -> texSeqs ls
+      SymArg l -> l
+      MSymArg ls -> texSeqs ls
+      ParArg l -> l
+      MParArg ls -> texSeqs ls
 
 argsToLatex :: [TeXArg] -> LaTeX
 argsToLatex tas = texSeqs $ map argToLatex tas
@@ -81,19 +63,19 @@ argsToLatex tas = texSeqs $ map argToLatex tas
   It will use the first occurrence of label.
 -}
 findLabel :: [String] -> LaTeX -> String
-findLabel labs latex =
-    case latex of
-      TeXRaw txt -> ""
+findLabel labs l =
+    case l of
+      TeXRaw _ -> ""
       TeXComm str args ->
           if str `elem` labs
              then showLatex $ argsToLatex args
              else findLabel labs (argsToLatex args)
-      TeXCommS str -> ""
-      TeXEnv str args latex2 -> ""
-      TeXMath mt latex2 -> ""
-      TeXLineBreak mmeas bool -> ""
+      TeXCommS _ -> ""
+      TeXEnv {} -> ""
+      TeXMath _ _ -> ""
+      TeXLineBreak _ _ -> ""
       TeXBraces latex2 -> findLabel labs latex2
-      TeXComment comment -> ""
+      TeXComment _ -> ""
       TeXSeq latex1 latex2 ->
           let
               ans1 = findLabel labs latex1
@@ -108,19 +90,19 @@ findLabel labs latex =
   Typically, the refs keyword is just "ref".
 -}
 findRefs :: [String] -> LaTeX -> [String]
-findRefs refs latex =
-    case latex of
-      TeXRaw txt -> []
+findRefs refs l =
+    case l of
+      TeXRaw _ -> []
       TeXComm str args ->
           if str `elem` refs
              then [showLatex $ argsToLatex args]
              else findRefs refs (argsToLatex args)
-      TeXCommS str -> []
-      TeXEnv str args latex2 -> findRefs refs latex2
-      TeXMath mt latex2 -> findRefs refs latex2
-      TeXLineBreak mmeas bool -> []
+      TeXCommS _ -> []
+      TeXEnv _ _ latex2 -> findRefs refs latex2
+      TeXMath _ latex2 -> findRefs refs latex2
+      TeXLineBreak _ _ -> []
       TeXBraces latex2 -> findRefs refs latex2
-      TeXComment comment -> []
+      TeXComment _ -> []
       TeXSeq latex1 latex2 -> findRefs refs latex1 ++ findRefs refs latex2
       TeXEmpty -> []
 
@@ -130,9 +112,9 @@ findRefs refs latex =
 latexToPI' :: MM.MultiMap String String -> LaTeX -> ProgramInfo -> ProgramInfo
 latexToPI' mm latex pi =
     case latex of
-      TeXRaw txt -> pi --skip over raw TeX
-      TeXComm str args -> latexToPI' mm (argsToLatex args) pi
-      TeXCommS str -> pi
+      TeXRaw _ -> pi --skip over raw TeX
+      TeXComm _ args -> latexToPI' mm (argsToLatex args) pi
+      TeXCommS _ -> pi
       TeXEnv str args latex2 -> ifelselist
         [ (str `elem` MM.lookup "Theorems" mm,
            let {
@@ -152,15 +134,12 @@ latexToPI' mm latex pi =
                             current pi } |> foldIterate insertDep (findRefs (MM.lookup "Refs" mm) latex2))
         ]
         (latexToPI' mm latex2 pi)
-      TeXMath mt latex2 -> pi
-      TeXLineBreak mmeas bool -> pi
+      TeXMath _ _ -> pi
+      TeXLineBreak _ _ -> pi
       TeXBraces latex2 -> latexToPI' mm latex2 pi
-      TeXComment comment -> pi
+      TeXComment _ -> pi
       TeXSeq latex1 latex2 -> latexToPI' mm latex2 (latexToPI' mm latex1 pi)
       TeXEmpty -> pi
-
-latexToPI :: MM.MultiMap String String -> LaTeX -> ProgramInfo
-latexToPI mm latex = latexToPI' mm latex emptyPI
 
 parseLaTeX2 :: String -> LaTeX
 parseLaTeX2 str =
@@ -173,7 +152,7 @@ chainPI2 inputFs parser =
     do
       handles <- mapM (`openFile` ReadMode) inputFs
       contents <- mapM (fmap parseLaTeX2 . hGetContents) handles
-      return $ foldl (\pi (fileName, latex) -> parser latex (pi{currentFile = fileName})) emptyPI (zip inputFs contents)
+      return $ foldl (\ pInfo (fileName, l) -> parser l (pInfo{currentFile = fileName})) emptyPI (zip inputFs contents)
 
 latexAuxParser::ProgramParser
 latexAuxParser pi =
@@ -193,20 +172,18 @@ showThm propName pi = removeJustWithDefault (lookupSF propName "type" pi) "" ++ 
 getDepGraph:: ProgramInfo-> Gr String ()
 getDepGraph pi =
   let
-    mp = deps pi
-    ks = fields pi --MM.keys mp
+    mymap = deps pi
+    ks = fields pi --MM.keys mymap
     kNums = M.fromList (zip ks [1..])
     --first lookup the key in the map to find dependencies
     --then find the num associated to each key.
     --adjs::Int -> [((), Int)]
     adjs = (\k->
       let
-        num = lookup2 k kNums
-        ds = MM.lookup k mp
+        ds = MM.lookup k mymap
         nums = mapMaybe (`M.lookup` kNums) ds
       in
         fmap (\n -> ((), n)) nums)
-    --ctxts = fmap (\k -> (adjs k `debug` (show $ adjs k), lookup2 k kNums, k, [])) ks
   in
     mkGraph (zip [1..] ks) (concatMap (\k -> map (\(x,y) -> (y,lookup2 k kNums,x)) (adjs k)) ks)
     --This has a bug where it won't make edges that reference nodes earlier in the list.
@@ -221,16 +198,16 @@ latexToDepGraph inputF outputF =
    handle <- openFile inputF ReadMode
    hSetNewlineMode handle universalNewlineMode
    contents <- hGetContents handle
-   let fields = readFields contents
-   print fields
-   let inputFs = MM.lookup "Files" fields
-   let auxF = head (MM.lookup "Aux" fields)
+   let myfields = readFields contents
+   print myfields
+   let inputFs = MM.lookup "Files" myfields
+   let auxF = head (MM.lookup "Aux" myfields)
    print auxF
    auxHandle <- openFile auxF ReadMode
    auxContents <- hGetContents auxHandle
-   pi <- chainPI2 inputFs (latexToPI' fields)
+   pi <- chainPI2 inputFs (latexToPI' myfields)
    case parse (latexAuxParser pi) "error" auxContents of
-     Left error -> print error
+     Left err -> print err
      Right pi2 ->
        do
          print pi2
@@ -245,7 +222,3 @@ main = do
   let inputF = head args
   let outputF = args !! 1
   latexToDepGraph inputF outputF
-
-test2:: IO ()
-test2 =
-  putStrLn $ findLabel ["ref"] (argsToLatex  [OptArg (TeXSeq (TeXRaw $ fromString "Proof of Theorem~") (TeXComm "ref" [FixArg (TeXRaw $ fromString "thm:1")]))])
