@@ -7,15 +7,15 @@
 # LaTeX related #
 #################
 
-latex.txt
-*.tex
-!test1.tex
 *.aux
 *.idx
 *.log
 *.nlo
 *.out
-*.synctex.gz
+*synctex*
+*.fls
+*latexmk
+*.out
 
 # Miscellaneous files #
 #######################

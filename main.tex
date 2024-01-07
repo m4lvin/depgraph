@@ -1,0 +1,35 @@
+\documentclass{article}
+
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+
+\begin{document}
+
+\section{Topic}
+
+\begin{theorem}[Main theorem]\label{thm:1}
+Riemann hypothesis holds!
+\end{theorem}
+
+\begin{lemma}[First lemma]\label{lem:1}
+  ...
+\end{lemma}
+
+\begin{lemma}[Second lemma]\label{lem:2}
+...
+\end{lemma}
+\begin{proof}
+Use Lemma~\ref{lem:1}
+\end{proof}
+
+\begin{lemma}[Third lemma]\label{lem:3}
+...
+\end{lemma}
+
+\begin{proof}[Proof of Theorem~\ref{thm:1}]
+Use Lemmas~\ref{lem:2} and~\ref{lem:3}.
+\end{proof}
+
+\end{document}

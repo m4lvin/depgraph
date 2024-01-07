@@ -1,16 +1,7 @@
 # Theorems
 
-clm
-cor
-fct
-lem
-thm
-pos
-pr
 theorem
 lemma
-corollary
-proposition
 
 # Proofs
 
@@ -23,12 +14,11 @@ ref
 # Labels
 
 label
-llabel
 
 # Files
 
-test1.tex
+main.tex
 
 # Aux
 
-test1.aux
+main.aux

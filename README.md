@@ -1,5 +1,11 @@
 # Usage #
 
+## TL;DR instructions
+
+Edit or replace `main.tex`, then run `make`. Good luck!
+
+## Step by step instructions
+
 Create a file input.txt containing what you want to be read as 
 * theorem environments (under Theorems)
 * proof environments (under Proofs)
@@ -18,13 +24,10 @@ Run
     ./depgraph input.txt output.dot
     dot.exe -Tpdf output.dot > output.pdf
 
-to make the pdf. (You must have dot installed: http://www.graphviz.org/. Make sure dot.exe is on your file path.) See dot documentation for alternate options in making the graph from the dot file.
+to make the pdf. (You must have dot installed: http://www.graphviz.org/ - make sure `dot` is on your file path.)
+See the Graphviz documentation for alternate options in making the graph from the dot file.
 
-For convenience, the above two lines are in the script "dep". You can run the above more simply as
-
-	./ dep input output
-
-If no arguments are given, it will default to "input" and "output".
+For convenience, the above two lines are in the `Makefile`.
 
 # What it does #
 
@@ -68,4 +71,4 @@ More options
 * Create an automatic process to make dependency graphs for each section/chapter and put then in the respective sections/chapters, with hyperlinks to the theorems.
 * Adapt the graph visualization to section dependencies (leitfaden).
 
-See also http://thmlink.blogspot.com/.
+See also http://thmlink.blogspot.com/
