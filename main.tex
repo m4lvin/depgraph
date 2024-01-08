@@ -1,7 +1,9 @@
 \documentclass{article}
 
-\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{tikz}
 
+\usepackage{amsthm}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
 
@@ -9,7 +11,7 @@
 
 \section{Topic}
 
-\begin{theorem}[Main theorem]\label{thm:1}
+\begin{theorem}[Riemann]\label{thm:riemann}
 Riemann hypothesis holds!
 \end{theorem}
 
@@ -28,8 +30,20 @@ Use Lemma~\ref{lem:1}
 ...
 \end{lemma}
 
-\begin{proof}[Proof of Theorem~\ref{thm:1}]
+\begin{proof}[Proof of Theorem~\ref{thm:riemann}]
 Use Lemmas~\ref{lem:2} and~\ref{lem:3}.
 \end{proof}
+
+\section{Dependencies}
+
+From \texttt{graph.tex} made by \texttt{dot2tex}:
+
+\IfFileExists{graph.tex}{\input{graph.tex}}{(not found)}
+
+\bigskip
+
+From \texttt{graph.pdf} made by \texttt{dot}:
+
+\IfFileExists{graph.pdf}{\includegraphics[width=0.8\textwidth]{graph.pdf}}{(not found)}
 
 \end{document}

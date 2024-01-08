@@ -1,5 +1,5 @@
 
-default: graph.pdf
+default: graph.pdf graph.tex
 
 .stack-work/dist/*/*/build/depgraph/depgraph: app/*.hs lib/*.hs
 	stack build
@@ -11,7 +11,10 @@ output.dot: .stack-work/dist/*/*/build/depgraph/depgraph input.txt main.tex main
 	stack exec depgraph input.txt output.dot
 
 graph.pdf: output.dot
-	dot -Tpdf output.dot > graph.pdf
+	dot -Tpdf output.dot > $@
+
+graph.tex: output.dot
+	dot2tex --autosize --figonly output.dot -o $@
 
 show: output.dot
 	dot -Tx11 output.dot

@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Main (main) where
 
 import DAGViz
@@ -138,7 +140,7 @@ latexAuxParser pi =
   do eof; return pi
     <|> try
       ( do
-          _ <- string "\\newlabel{"
+          _ <- string "\\newlabel{" -- Why is this here?
           lab <- many1 (noneOf "{}")
           _ <- many1 (oneOf "{}")
           num <- many1 (noneOf "{}")
@@ -150,11 +152,11 @@ latexAuxParser pi =
 
 showThm :: String -> ProgramInfo -> String
 showThm propName pi =
-  removeJustWithDefault (lookupSF propName "type" pi) ""
+  fromMaybe "" (lookupSF propName "type" pi)
     ++ " "
-    ++ removeJustWithDefault (lookupSF propName "num" pi) ""
+    ++ fromMaybe "" (lookupSF propName "num" pi)
     ++ ": "
-    ++ removeJustWithDefault (lookupSF propName "name" pi) propName
+    ++ fromMaybe propName (lookupSF propName "name" pi)
 
 getDepGraph :: ProgramInfo -> Gr String ()
 getDepGraph pi =
@@ -167,7 +169,7 @@ getDepGraph pi =
       adjs k =
         let ds = MM.lookup k mymap
             nums = mapMaybe (`M.lookup` kNums) ds
-         in fmap (\n -> ((), n)) nums
+         in map ((),) nums
    in mkGraph (zip [1 ..] ks) (concatMap (\k -> map (\(x, y) -> (y, lookup2 k kNums, x)) (adjs k)) ks)
 
 -- This has a bug where it won't make edges that reference nodes earlier in the list.
@@ -183,7 +185,7 @@ latexToDepGraph inputF outputF =
     hSetNewlineMode handle universalNewlineMode
     contents <- hGetContents handle
     let myfields = readFields contents
-    print myfields
+    print (MM.toMap myfields)
     let inputFs = MM.lookup "Files" myfields
     let auxF = head (MM.lookup "Aux" myfields)
     -- print auxF

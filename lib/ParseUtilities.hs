@@ -1,14 +1,11 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
-
-module ParseUtilities (ProgramInfo (current, deps, fields, currentFile), emptyPI, insertDep, insertSF, insertSF2, lookupSF, insertField, ProgramParser, ioFile, ioFiles, fieldsParser, readFields, chain, chainPI) where
+module ParseUtilities (ProgramInfo(..), ProgramParser, readFields, lookupSF, insertField, insertSF, insertDep, insertSF2, emptyPI) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.MultiMap as MM
-import System.IO
 import Text.Parsec.Language (emptyDef)
 import qualified Text.Parsec.Token as P
 import Text.ParserCombinators.Parsec
-import Utilities
+import Data.Either
 import Prelude hiding (pi)
 
 lexer :: P.TokenParser ()
@@ -20,22 +17,25 @@ symbol = P.symbol lexer
 identifier :: Parser String
 identifier = P.identifier lexer
 
--- TODO: replace with a nice "instance (Show ProgramInfo)"
-instance (Show a, Show b) => Show (MM.MultiMap a b) where
-  show m = show (MM.toMap m)
-
 data ProgramInfo = ProgramInfo
   { deps :: MM.MultiMap String String,
     subfields :: Map.Map String (Map.Map String String),
     current :: String,
     fields :: [String],
     currentFile :: String
-    -- , names:: Map.Map String String
   }
-  deriving (Show)
 
--- display names
--- , labels:: Map.Map String String} deriving Show
+instance (Show ProgramInfo) where
+  show pi = "ProgramInfo {\n" ++
+    "  deps = " ++ show (MM.toMap (deps pi)) ++ ",\n"
+    ++
+    "  subfields = " ++ show (subfields pi) ++ ",\n"
+    ++
+    "  current = " ++ show (current pi) ++ ",\n"
+    ++
+    "  currentFile = " ++ show (currentFile pi) ++ ",\n"
+    ++
+    "}"
 
 emptyPI :: ProgramInfo
 emptyPI = ProgramInfo MM.empty Map.empty "" [] ""
@@ -71,21 +71,6 @@ insertField y pi = pi {fields = y : fields pi}
 
 type ProgramParser = ProgramInfo -> Parser ProgramInfo
 
-ioFile :: String -> String -> (String -> String) -> IO ()
-ioFile inputF outputF f =
-  do
-    handle <- openFile inputF ReadMode
-    contents <- hGetContents handle
-    appendFile outputF (f contents)
-
-ioFiles :: [String] -> String -> (String -> String) -> IO ()
-ioFiles inputFs outputF f =
-  do
-    handles <- mapM (`openFile` ReadMode) inputFs
-    contents <- mapM hGetContents handles
-    let content = unlines contents
-    appendFile outputF (f content)
-
 fieldsParser :: ProgramParser
 fieldsParser pi =
   do eof; return pi
@@ -103,14 +88,4 @@ fieldsParser pi =
     <|> do _ <- anyToken; fieldsParser pi
 
 readFields :: String -> MM.MultiMap String String
-readFields contents = deps $ justRight (parse (fieldsParser emptyPI) "error" contents)
-
-chain :: [String] -> a -> (a -> String -> a) -> (a -> Parser a) -> IO a
-chain inputFs ini action parser =
-  do
-    handles <- mapM (`openFile` ReadMode) inputFs
-    contents <- mapM hGetContents handles
-    return $ foldIterate2 (\fileName text pi -> justRight (parse (parser (action pi fileName)) "error" text)) inputFs contents ini
-
-chainPI :: [String] -> ProgramParser -> IO ProgramInfo
-chainPI inputFs = chain inputFs emptyPI (\pi fileName -> pi {currentFile = fileName})
+readFields contents = deps $ fromRight (error "") (parse (fieldsParser emptyPI) "error" contents)
