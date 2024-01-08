@@ -4,6 +4,8 @@
 
 Edit or replace `main.tex`, then run `make`. Good luck!
 
+![](doc/example.png)
+
 ## Step by step instructions
 
 Create a file input.txt containing what you want to be read as 
